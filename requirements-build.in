@@ -1,0 +1,15 @@
+calver
+Cython<3.0
+expandvars
+flit_core<4,>=3.4
+hatch-fancy-pypi-readme>=23.2.0
+hatchling<2,>=1.6.0
+hatch-vcs
+maturin<2,>=1
+poetry-core>=1.0.0
+setuptools>=66.1
+setuptools-scm
+setuptools-rust>=1.4.0
+tomli
+typing-extensions!=4.7.0,>=4.6.0 
+wheel>=0.36
