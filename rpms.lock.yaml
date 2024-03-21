@@ -5,9 +5,15 @@ arches:
   - arch: x86_64
     packages:
       - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/releases/39/Everything/x86_64/os/Packages/c/cpp-13.2.1-3.fc39.x86_64.rpm
+      - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/releases/39/Everything/x86_64/os/Packages/g/gc-8.2.2-4.fc39.x86_64.rpm
       - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/releases/39/Everything/x86_64/os/Packages/g/gcc-13.2.1-3.fc39.x86_64.rpm
+      - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/releases/39/Everything/x86_64/os/Packages/g/guile22-2.2.7-9.fc39.x86_64.rpm
+      - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/releases/39/Everything/x86_64/os/Packages/h/http-parser-2.9.4-9.fc39.x86_64.rpm
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/releases/39/Everything/x86_64/os/Packages/j/jansson-2.13.1-7.fc39.x86_64.rpm
       - repoid: updates-released
@@ -21,9 +27,13 @@ arches:
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/releases/39/Everything/x86_64/os/Packages/l/libfido2-1.13.0-3.fc39.x86_64.rpm
       - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/releases/39/Everything/x86_64/os/Packages/l/libgomp-13.2.1-3.fc39.x86_64.rpm
+      - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/releases/39/Everything/x86_64/os/Packages/l/libmpc-1.3.1-3.fc39.x86_64.rpm
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/releases/39/Everything/x86_64/os/Packages/l/libpkgconf-1.9.5-2.fc39.x86_64.rpm
+      - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/releases/39/Everything/x86_64/os/Packages/l/libssh2-1.11.0-2.fc39.x86_64.rpm
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/releases/39/Everything/x86_64/os/Packages/l/libtool-ltdl-2.4.7-7.fc39.x86_64.rpm
       - repoid: updates-released
@@ -49,17 +59,29 @@ arches:
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/b/binutils-gold-2.40-14.fc39.x86_64.rpm
       - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/c/cargo-1.76.0-1.fc39.x86_64.rpm
+      - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/c/cpp-13.2.1-7.fc39.x86_64.rpm
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/e/elfutils-debuginfod-client-0.191-2.fc39.x86_64.rpm
+      - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/e/elfutils-libelf-0.191-2.fc39.x86_64.rpm
+      - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/e/elfutils-libs-0.191-2.fc39.x86_64.rpm
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/g/gcc-13.2.1-7.fc39.x86_64.rpm
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/g/git-core-2.44.0-1.fc39.x86_64.rpm
       - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/g/glibc-2.38-16.fc39.x86_64.rpm
+      - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/g/glibc-common-2.38-16.fc39.x86_64.rpm
+      - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/g/glibc-devel-2.38-16.fc39.x86_64.rpm
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/g/glibc-headers-x86-2.38-16.fc39.noarch.rpm
+      - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/g/glibc-minimal-langpack-2.38-16.fc39.x86_64.rpm
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/g/go-filesystem-3.4.0-2.fc39.x86_64.rpm
       - repoid: updates-released
@@ -71,7 +93,15 @@ arches:
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/k/kernel-headers-6.7.3-200.fc39.x86_64.rpm
       - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/l/libgcc-13.2.1-7.fc39.x86_64.rpm
+      - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/l/libgit2-1.7.2-1.fc39.x86_64.rpm
+      - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/l/libgomp-13.2.1-7.fc39.x86_64.rpm
+      - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/l/libuv-1.48.0-1.fc39.x86_64.rpm
+      - repoid: updates-released
+        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/l/llvm-libs-17.0.6-3.fc39.x86_64.rpm
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/n/nodejs-20.10.0-3.fc39.x86_64.rpm
       - repoid: updates-released
@@ -83,16 +113,7 @@ arches:
       - repoid: updates-released
         url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/o/openssh-clients-9.3p1-10.fc39.x86_64.rpm
       - repoid: updates-released
-        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/e/elfutils-libelf-0.191-2.fc39.x86_64.rpm
+        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/r/rust-1.76.0-1.fc39.x86_64.rpm
       - repoid: updates-released
-        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/e/elfutils-libs-0.191-2.fc39.x86_64.rpm
-      - repoid: updates-released
-        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/g/glibc-2.38-16.fc39.x86_64.rpm
-      - repoid: updates-released
-        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/g/glibc-common-2.38-16.fc39.x86_64.rpm
-      - repoid: updates-released
-        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/g/glibc-minimal-langpack-2.38-16.fc39.x86_64.rpm
-      - repoid: updates-released
-        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/l/libgcc-13.2.1-7.fc39.x86_64.rpm
-      - repoid: updates-released
-        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/l/libgomp-13.2.1-7.fc39.x86_64.rpm
+        url: http://fedora.c3sl.ufpr.br/linux/updates/39/Everything/x86_64/Packages/r/rust-std-static-1.76.0-1.fc39.x86_64.rpm
+
