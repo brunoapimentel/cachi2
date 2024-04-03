@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 import re
@@ -103,6 +104,7 @@ class ResolvedGoModule(NamedTuple):
     parsed_modules: Iterable[ParsedModule]
     parsed_packages: Iterable[ParsedPackage]
     modules_in_go_sum: frozenset["ModuleID"]
+    go_work_root: Optional[RootedPath] = None
 
 
 class Module(NamedTuple):
@@ -440,6 +442,7 @@ def _create_modules_from_parsed_data(
     parsed_modules: Iterable[ParsedModule],
     modules_in_go_sum: frozenset[ModuleID],
     version_resolver: "ModuleVersionResolver",
+    go_work_root: Optional[RootedPath] = None,
 ) -> list[Module]:
     def _create_module(module: ParsedModule) -> Module:
         mod_id = _get_module_id(module)
@@ -452,7 +455,11 @@ def _create_modules_from_parsed_data(
             real_path = name
 
             if mod_id not in modules_in_go_sum:
-                missing_hash_in_file = main_module_dir.subpath_from_root / "go.sum"
+                if go_work_root:
+                    missing_hash_in_file = go_work_root.path / "go.work.sum"
+                else:
+                    missing_hash_in_file = main_module_dir.subpath_from_root / "go.sum"
+
                 log.warning("checksum not found in %s: %s@%s", missing_hash_in_file, name, version)
         else:
             # module/name v1.0.0 => ./local/path
@@ -591,6 +598,7 @@ def fetch_gomod_source(request: Request) -> RequestOutput:
                     resolve_result.parsed_modules,
                     resolve_result.modules_in_go_sum,
                     version_resolver,
+                    resolve_result.go_work_root,
                 )
             )
 
@@ -813,7 +821,6 @@ def _resolve_gomod(
     :raises PackageManagerError: if fetching dependencies fails
     """
     _protect_against_symlinks(app_dir)
-    modules_in_go_sum = _parse_go_sum(app_dir)
 
     config = get_config()
 
@@ -837,6 +844,12 @@ def _resolve_gomod(
     log.info(f"Using Go release: {go.release}")
 
     run_params = {"env": env, "cwd": app_dir}
+
+    if go_work_root := _get_go_work_root(app_dir, go, run_params):
+        go_sum_files = _get_go_sum_files(go_work_root, go, run_params)
+        modules_in_go_sum = _parse_go_sum_files(go_sum_files)
+    else:
+        modules_in_go_sum = _parse_go_sum(app_dir.join_within_root("go.sum"))
 
     # Vendor dependencies if the gomod-vendor flag is set
     flags = request.flags
@@ -865,14 +878,16 @@ def _resolve_gomod(
         app_dir, modules_json_stream
     )
 
+    main_module_version = version_resolver.get_golang_version(main_module_dict["Path"], app_dir)
+
     main_module = ParsedModule(
         path=main_module_dict["Path"],
-        version=version_resolver.get_golang_version(main_module_dict["Path"], app_dir),
+        version=main_module_version,
         main=True,
     )
 
     workspace_modules = [
-        _parse_workspace_module(app_dir, workspace_dict, main_module.version)
+        _parse_workspace_module(app_dir, workspace_dict, main_module_version)
         for workspace_dict in workspace_dict_list
     ]
 
@@ -898,7 +913,7 @@ def _resolve_gomod(
 
     _validate_local_replacements(all_modules, app_dir)
 
-    return ResolvedGoModule(main_module, all_modules, all_packages, modules_in_go_sum)
+    return ResolvedGoModule(main_module, all_modules, all_packages, modules_in_go_sum, go_work_root)
 
 
 ModuleDict = dict[str, Any]
@@ -955,14 +970,55 @@ def _parse_workspace_module(
     )
 
 
-def _parse_go_sum(module_dir: RootedPath) -> frozenset[ModuleID]:
-    """Return the set of modules present in the go.sum file in the specified directory.
+def _get_go_work_root(
+    app_dir: RootedPath, go: Go, run_params: dict[str, Any]
+) -> Optional[RootedPath]:
+    """Get the directory that contains the go.work file, if it exists."""
+    go_work_file = go(["env", "GOWORK"], run_params).rstrip()
+
+    if not go_work_file:
+        return None
+
+    go_work_root = Path(go_work_file).parent
+
+    # make sure that the path to go.work is within the request's root
+    return app_dir.join_within_root(go_work_root)
+
+
+def _get_go_sum_files(
+    go_work_root: RootedPath,
+    go: Go,
+    run_params: dict[str, Any],
+) -> list[RootedPath]:
+    """Find all go.sum files present in the related workspaces."""
+    go_work_json = go(["work", "edit", "-json"], run_params).rstrip()
+    go_work = json.loads(go_work_json)
+
+    go_sums = [
+        go_work_root.join_within_root(f"{module['DiskPath']}/go.sum") for module in go_work["Use"]
+    ]
+
+    go_sums.append(go_work_root.join_within_root("go.work.sum"))
+
+    return go_sums
+
+
+def _parse_go_sum_files(go_sum_files: list[RootedPath]) -> frozenset[ModuleID]:
+    """Return the set of modules present in all specified go.sum files."""
+    modules: frozenset[ModuleID] = frozenset()
+
+    for go_sum_file in go_sum_files:
+        modules = modules | _parse_go_sum(go_sum_file)
+
+    return modules
+
+
+def _parse_go_sum(go_sum: RootedPath) -> frozenset[ModuleID]:
+    """Return the set of modules present in the specified go.sum file.
 
     A module is considered present if the checksum for its .zip file is present. The go.mod file
     checksums are not relevant for our purposes.
     """
-    go_sum = module_dir.join_within_root("go.sum")
-
     if not go_sum.path.exists():
         return frozenset()
 
