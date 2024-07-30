@@ -1,12 +1,28 @@
 # Design document for RubyGems/Bundler package manager
 
-## Development prerequisites
+Contents:
+
+1. [Ruby ecossystem overview](#i-ruby-ecossystem-overview)
+2. [Current implementation overview (Cachito)](#ii-overview-of-the-current-implementation-in-cachito)
+3. [Design for the Cachi2 implementation](#iii-design-for-the-implementation-in-cachi2)
+
+## I. Ruby ecossystem overview
+
+### Development prerequisites
+
+In order to execute the commands in the examples below, make sure you have the following packages installed in your
+environment:
 
 ```bash
 sudo dnf install rubygems rubygems-bundler
 ```
 
-## Main files
+Or use the official Ruby image from Docker hub:
+```bash
+podman run --rm -it docker.io/library/ruby:3.3.3 bash
+```
+
+### Project structure
 
 ```bash
 bundle init # creates Gemfile in the current directory
@@ -23,127 +39,81 @@ bundle lock # creates Gemfile.lock in the current directory
 
 ### Glossary
 
-- **Gemfile**: A file that specifies the gems that your project depends on and their versions.
-Bundler uses this file to install the correct versions of gems for your project.
+- **Gemfile**: A file that specifies the gems that your project depends on and their versions. Bundler uses this file
+to install the correct versions of gems for your project.
 
-```ruby
-source "https://rubygems.org"
+  ```ruby
+  source "https://rubygems.org"
 
-gem "rails", "= 6.1.7"
-```
+  gem "rails", "= 6.1.7"
+  ```
 
-- **Gemfile.lock**: A file that locks the versions of gems that are installed for your project.
-Bundler uses this file to ensure that the correct versions of gems are installed consistently across different environments.
+- **Gemfile.lock**: A file that locks the versions of gems that are installed for your project. Bundler uses this file
+to ensure that the correct versions of gems are installed consistently across different environments. Here are the 
+sections present on a `Gemfile.lock` file:
 
-```ruby
-GIT
- ...
-PATH
- ...
-GEM
- ...
-PLUGIN
- ...
-PLATFORMS
- ...
-DEPENDENCIES
- ...
-CHECKSUMS
- ...
-BUNDLED WITH
- ...
-```
+  ```ruby
+  GIT
+  ...
+  PATH
+  ...
+  GEM
+  ...
+  PLUGIN
+  ...
+  PLATFORMS
+  ...
+  DEPENDENCIES
+  ...
+  CHECKSUMS
+  ...
+  BUNDLED WITH
+  ...
+  ```
 
-See dependencies [section](#dependencies) for specific types of dependencies.
+  See the dependencies [section](#dependencies) in this document for more info on each type of
+  dependency.
 
-- **RubyGems**: General package manager for Ruby. Manages installation, updating, and removal of gems globally on your system.
+- **RubyGems**: General package manager for Ruby. Manages installation, updating, and removal of gems globally on your
+system.
 
-```bash
-gem --help
-```
+  ```bash
+  gem --help
+  ```
 
 - **Bundler**: Dependency management tool for Ruby projects.
 Ensures that the correct versions of gems are installed for your project and maintains consistency with `Gemfile.lock`.
 
-```bash
-bundler --help
-```
+  ```bash
+  bundler --help
+  ```
 
-- **Gem**: A package that can be installed and managed by Rubygems.
-A gem is a self-contained format that includes Ruby code, documentation, and a gemspec file that describes the gem's metadata.
+- **Gem**: A package that can be installed and managed by Rubygems. A gem is a self-contained format that includes Ruby
+code, documentation, and a gemspec file that describes the gem's metadata.
 
-- **{gem}.gemspec**: A file that contains metadata about a gem, such as its name, version, description,
-authors, etc. RubyGems uses it to install, update, and uninstall gems.
+- **{gem}.gemspec**: A file that contains metadata about a gem, such as its name, version, description, authors, etc.
+RubyGems uses it to install, update, and uninstall gems.
 
-```ruby
-Gem::Specification.new do |spec|
- spec.name        = "example"
- spec.version     = "0.1.0"
- spec.authors     = ["Nobody"]
- spec.email       = ["ruby@example.com"]
- spec.summary     = "Write a short summary, because RubyGems requires one."
-end
-```
+  ```ruby
+  Gem::Specification.new do |spec|
+  spec.name        = "example"
+  spec.version     = "0.1.0"
+  spec.authors     = ["Nobody"]
+  spec.email       = ["ruby@example.com"]
+  spec.summary     = "Write a short summary, because RubyGems requires one."
+  end
+  ```
 
-## cachito implementation
+### Dependency types
 
-[cachito/workers/pkg_mangers/rubygems.py](https://github.com/containerbuildsystem/cachito/blob/master/cachito/workers/pkg_managers/rubygems.py)
-
-Most work is already done by parsing the `Gemfile.lock` file, which pins all dependencies to exact versions.
-The only source for gem dependencies to be fetched from is <https://rubygems.org>.
-Git dependencies are specified using a repo URL and pinned to a commit hash.
-Path dependencies are specified using a local path.
-
-Bundler always executes the `Gemfile`, which is arbitrary ruby code.
-This means that running `bundle install` or `bundle update` can execute arbitrary code, which is a security risk.
-That's why Bundler **is not used** to download dependencies.
-Instead, as stated above, cachito parses `Gemfile.lock` file directly and download the gems from <https://rubygems.org>.
-
-**Note**: parsing `Gemfile.lock` is done via [gemlock-parser](https://github.com/containerbuildsystem/gemlock-parser),
-which is vendored from [scancode-toolkit](https://github.com/nexB/scancode-toolkit/blob/develop/src/packagedcode/gemfile_lock.py).
-
-`Gemfile` example:
-
-```ruby
-source "https://rubygems.org"
-
-gem "rails", "= 6.1.7"
-
-system("echo 'Hello, world!'")
-system("sudo rm -rf /")
-```
-
-Source code for "official" Bundler lockfile parsing in Ruby:
-
-<https://github.com/rubygems/rubygems/blob/master/bundler/lib/bundler/lockfile_parser.rb>
-
-### Missing features
-
-Bundler is not pinned as a dependency with a version in the `Gemfile.lock` (even if it is pinned in the `Gemfile`).
-It only appears in the `BUNDLED WITH` section in the `Gemfile.lock` file.
-However, the same version of Bundler should be installable and used for resolving dependencies.
-Using the Bundler from the build image usually does not fit.
-
-## cachi2 implementation - TBD
-
-_The old way of implementing new package managers for one big module is no longer preferred._
-_New package managers should split the logic into more self-contained modules wrapped in a package._
-
-### Vendoring solution
-
-Bundler has a built-in feature to cache all dependencies locally. This is done with the `bundle cache` command or `bundle package` alias.
-The default cache directory is `vendor/cache`.
-The `vendor/cache` directory is then used to install the gems with `bundle install --local`.
-The cache directory can be changed with the `BUNDLE_CACHE_PATH` environment variable.
-
-### Dependencies
-
-There are four types of [sources](https://github.com/rubygems/rubygems/blob/master/bundler/lib/bundler/lockfile_parser.rb#L48) for dependencies in the `Gemfile.lock` file:
+There are four types of
+[sources](https://github.com/rubygems/rubygems/blob/master/bundler/lib/bundler/lockfile_parser.rb#L48) for dependencies
+in the `Gemfile.lock` file:
 
 #### Gem dependencies
 
-Regular gem dependencies are located at the source URL, in our case, always <https://rubygems.org>.
-Each gem can be accessed by its name and version - rubygems.org/gems/`<name>`-`<version>`.gem
+Regular gem dependencies are located at the source URL, in our case, always <https://rubygems.org>. Each gem can be
+accessed by its name and version - rubygems.org/gems/`<name>`-`<version>`.gem
 
 Example of a gem dependency in the `Gemfile.lock` file:
 
@@ -174,7 +144,7 @@ GEM
 
 #### Git dependencies
 
-Example of a git dependency in the `Gemfile.lock` file:
+Example of a Git dependency in the `Gemfile.lock` file:
 
 ```Gemfile.lock
 ...
@@ -186,20 +156,6 @@ GIT
  porta (2.14.1)
 ...
 ```
-
-All git dependencies must be directories with specific
-[format](https://github.com/rubygems/rubygems/blob/3da9b1dda0824d1d770780352bb1d3f287cb2df5/bundler/lib/bundler/source/git.rb#L130):
-
-```ruby
-"{repo-name}-{revision}"
-```
-
-Any other format will cause Bundler to re-download the repository -> cache invalidation -> the build will fail.
-
-**Name of the directory must come from the git URL, not the actual name of the gem. The repositoy must contain unpacked source code.**
-
-Users specify the name (from the `{gem}.gemspec` file) in the `Gemfile` alongside with git URL.
-The name of the gem is might not be the same as the name of the git repository.
 
 #### Path dependencies
 
@@ -214,38 +170,44 @@ PATH
 ...
 ```
 
-All path dependencies must be in the project directory. Anything else does not make sense.
-Bundler [does not copy](https://github.com/rubygems/rubygems/blob/master/bundler/lib/bundler/source/path.rb#L83)
-those dependencies that are already within the root directory of the project.
-
-#### Plugins
-
-Not supported by cachi2.
+All path dependencies must be in the project directory. Bundler
+[does not copy](https://github.com/rubygems/rubygems/blob/master/bundler/lib/bundler/source/path.rb#L83) those
+dependencies that are already within the root directory of the project.
 
 ### Platforms
 
-Some gems may contain pre-compiled binaries that provide native extensions to the Ruby package.
-One of the goals of cachi2 is to enforce building from source as much as possible.
-([pip wheels](https://github.com/containerbuildsystem/cachi2/blob/main/docs/pip.md#distribution-formats) are an exception)
+Some gems may contain pre-compiled binaries that provide native extensions to the Ruby package. Any gem declared in the
+`Gemfile` can be limited to specific
+[platforms](https://bundler.io/v2.5/man/gemfile.5.html#PLATFORMS), making Bundler ignore it in case the project is
+being built on a non-matching platform:
 
-To satisfy this goal, we need some way of avoiding dependencies that contain binaries.
-This can be achieved through the `BUNDLE_FORCE_RUBY_PLATFORM` environment variable.
-See environment variables [section](#environment-variables).
+```ruby
+gem "nokogiri",   platforms: [:windows_31, :jruby]
+```
 
-For example - all versions (platforms) of nokogiri gem:
+Here's an example of how a the `PLATFORM` section looks like in the `Gemfile.lock`:
 
-<https://rubygems.org/gems/nokogiri/versions/>
+```
+PLATFORMS
+  arm64-darwin-20
+  arm64-darwin-21
+  arm64-darwin-22
+  ruby
+  x86_64-darwin-18
+  x86_64-darwin-20
+  x86_64-darwin-21
+  x86_64-darwin-22
+  x86_64-linux
+```
 
-### Checksums
+In case a user wants to force all the binaries to be compiled from source, the `BUNDLE_FORCE_RUBY_PLATFORM` environment
+variable can be used.
 
-Checksum validation is enabled by default.
-It can be disabled with the `BUNDLE_DISABLE_CHECKSUM_VALIDATION` environment variable.
+### Dependency Checksums
 
-There is also an option to generate checksums in `Gemfile.lock`, but in bizarre way.
-This feature is not exposed to users right now.
-Checksums are not generated by default, but they can be added manually.
-There is an [issue](https://github.com/rubygems/rubygems/issues/3379#issuecomment-1974761996)
-in the official rubygems repository as well.
+The support to checksums in the `Gemfile.lock` is still in development, and currently is an
+[opt-in feature](https://github.com/rubygems/rubygems/pull/7217). To enable it, we need to manually add a `CHECKSUMS`
+section in the `Gemfile.lock`:
 
 ```shell
 # manually add `CHECKSUMS` section somewhere in the Gemfile.lock
@@ -258,11 +220,7 @@ cat Gemfile.lock
 
 Example of a checksum section in the `Gemfile.lock`:
 
-```Gemfile.lock
-...
-DEPENDENCIES
- rails (= 6.1.7)
-
+```
 CHECKSUMS
  actioncable (6.1.7) sha256=ee5345e1ac0a9ec24af8d21d46d6e8d85dd76b28b14ab60929c2da3e7d5bfe64
  actionmailbox (6.1.7) sha256=c4364381e724b39eee3381e6eb3fdc80f121ac9a53dea3fd9ef687a9040b8a08
@@ -270,16 +228,128 @@ CHECKSUMS
  actionpack (6.1.7) sha256=3a8580e3721757371328906f953b332d5c95bd56a1e4f344b3fee5d55dc1cf37
  actiontext (6.1.7) sha256=c5d3af4168619923d0ff661207215face3e03f7a04c083b5d347f190f639798e
  actionview (6.1.7) sha256=c166e890d2933ffbb6eb2a2eac1b54f03890e33b8b7269503af848db88afc8d4
- ...
-
-BUNDLED WITH
- 2.5.11
 ```
 
-I believe this feature is available since Bundler [v2.5.0](https://github.com/rubygems/rubygems/blob/master/bundler/lib/bundler/lockfile_parser.rb#L55)
+This feature is available since Bundler [v2.5.0](https://github.com/rubygems/rubygems/blob/master/bundler/lib/bundler/lockfile_parser.rb#L55),
 from this [PR](https://github.com/rubygems/rubygems/pull/6374) being merged on Oct 21, 2023.
 
-### Environment variables
+## II. Overview of the current implementation in Cachito
+
+[cachito/workers/pkg_mangers/rubygems.py](https://github.com/containerbuildsystem/cachito/blob/master/cachito/workers/pkg_managers/rubygems.py)
+
+Most work is already done by parsing the `Gemfile.lock` file, which pins all dependencies to exact versions. The only
+supported source for gem dependencies to be fetched from is <https://rubygems.org>. Git dependencies are specified
+using a repo URL and pinned to a commit hash. Path dependencies are specified using a local path.
+
+To avoid arbitrary code execution, Bundler **is not used** to download dependencies. Instead, as stated above, Cachito
+parses `Gemfile.lock` file directly and download the gems from <https://rubygems.org>.
+
+**Note**: parsing `Gemfile.lock` is done via [gemlock-parser](https://github.com/containerbuildsystem/gemlock-parser),
+which is vendored from
+[scancode-toolkit](https://github.com/nexB/scancode-toolkit/blob/develop/src/packagedcode/gemfile_lock.py).
+
+Source code for "official" Bundler lockfile parsing in Ruby:
+<https://github.com/rubygems/rubygems/blob/master/bundler/lib/bundler/lockfile_parser.rb>
+
+### Missing features
+
+Bundler is not pinned as a dependency with a version in the `Gemfile.lock` (even if it is pinned in the `Gemfile`).
+It only appears in the `BUNDLED WITH` section in the `Gemfile.lock` file. However, the same version of Bundler should
+be installable and used for resolving dependencies. Using the Bundler version present in the base image usually does
+not fit.
+
+## III. Design for the implementation in Cachi2
+
+### Prefetching
+
+Running a bundler command to fetch the dependencies always executes the `Gemfile`, which is arbitrary Ruby code.
+Executing arbitrary code is a security risk and makes it impossible to assert that the resulting SBOM is accurate
+(since any random package can be fetched from the Internet during the prefetch). This means that we need to implement
+custom code to fetch the dependencies.
+
+#### Output folder structure
+
+Bundler has a built-in feature to cache all dependencies locally. This is done with the `bundle cache --all` command or
+`bundle package --all` alias. In order to make bundler use the prefetched dependencies during the build, Cachi2 needs
+to recreate the exact same folder structure as bundler does.
+
+Here's an example of how the output folder should look like:
+
+```bash
+$ ls vendor/cache
+
+actioncable-6.1.7.gem
+date-3.3.4.gem
+json-schema-26487618a684
+nokogiri-1.16.6.gem
+tzinfo-2.0.6.gem
+```
+
+Notice that all the `.gem` dependencies are kept in their original format, and Git dependencies are just plain clones
+of the repository placed in a folder. For Git dependencies, the folder name must match this specific
+[format](https://github.com/rubygems/rubygems/blob/3da9b1dda0824d1d770780352bb1d3f287cb2df5/bundler/lib/bundler/source/git.rb#L130):
+
+```ruby
+"#{base_name}-#{shortref_for_path(revision)}"
+```
+
+The name of the directory **must come from the Git URL**, not the actual name of the gem, and the cloned folder must
+contain unpacked source code. Any other format will cause bundler to try to re-download the repository, causing the
+build to fail.
+
+##### Multiple Gems in a single repository
+
+A single repository can hold multiple Gems, and those can be imported as dependencies. When this happens, Bundler still
+expects a single clone to be made. Here's an example of how multiple gems imported from a single repository+revision
+looks like in the `Gemfile.lock`: 
+
+```
+GIT
+  remote: https://github.com/chatwoot/azure-storage-ruby
+  revision: 9957cf899d33a285b5dfe15bdb875292398e392b
+  branch: chatwoot
+  specs:
+    azure-storage-blob (2.0.3)
+      azure-storage-common (~> 2.0)
+      nokogiri (~> 1, >= 1.10.8)
+    azure-storage-common (2.0.4)
+      faraday (~> 2.0)
+      faraday-follow_redirects (~> 0.3.0)
+      faraday-net_http_persistent (~> 2.0)
+      net-http-persistent (~> 4.0)
+      nokogiri (~> 1, >= 1.10.8)
+```
+
+### Out of scope
+
+#### Plugins
+Bundler has support for using [plugins](https://bundler.io/guides/bundler_plugins.html), which allows users to extend
+Bundler's functionality in any way that they seem fit. Since this can open the possibility for security issues, plugins
+will not be supported by Cachi2.
+
+Since we're not proposing the direct usage of Bundler to fetch the dependencies, no other actions are needed in the
+prefetch phase, existing plugin definitions will be ignored.
+
+#### Pre-compiled binaries
+For the initial implementation, we're aiming to provide support only for plain Ruby gems (which are idenfied as `RUBY`
+in the `PLATFORMS` section of the `Gemfile.lock`). This means that we need to explicitly forbid the processing of any
+repository that has references to any platform besides `RUBY`. 
+
+To achieve this, we can implement a check in Cachi2 that will cause the request to fail if any other platform is
+specified in the `Gemfile.lock`. This way, we can avoid downloading any pre-compiled content.
+
+We should probably implement support for pre-compiled binaries as a follow-up feature, similarly to what was done with
+[pip wheels](https://github.com/containerbuildsystem/cachi2/blob/main/docs/pip.md#distribution-formats).
+
+#### Checksum verification
+Since checksums in the `Gemlock.file` is still a feature in development (see [checksums](#dependency-checksums)), we
+can postpone implementing support for it until the feature is delivered.
+
+We need to decide if we will report all dependencies as having missing checksums in the SBOM, or not.
+
+### Providing the content for the hermetic build
+
+#### Setting the Bundler configuration
 
 The order of precedence for Bundler configuration options is as follows:
 
@@ -288,11 +358,14 @@ The order of precedence for Bundler configuration options is as follows:
 3. Global config (`~/.bundle/config`)
 4. Bundler default config
 
-Since the local configuration takes higher precedence than the environment variables (except BUNLDE_APP_CONFIG),
-we need to set the Bundler configuration options to make the build work.
-We can easily set the environment variables if the local configuration file does not exist.
+Since the local configuration takes higher precedence than the environment variables (except `BUNDLE_APP_CONFIG`), we
+need to set the Bundler configuration options to make the build work.
 
-#### Relevant environment variables
+This can be achieved by using Cachi2's `inject-files` command to add the necessary keys to the local configuration,
+while respecting the other values that might exist there. In case the local config file does not exist, it needs to be
+created by this command.
+
+#### Relevant configuration for the build
 
 ```txt
 BUNDLE_FORCE_RUBY_PLATFORM=true
@@ -300,116 +373,103 @@ BUNDLE_DEPLOYMENT=true
 BUNDLE_CACHE_PATH=${output_dir}/deps/rubygems
 ```
 
-**BUNDLE_CACHE_PATH**: The directory that Bundler will place cached gems in when running bundle package,
-and that Bundler will look in when installing gems. Defaults to `vendor/cache`.
+- **BUNDLE_CACHE_PATH**: The directory that Bundler will place cached gems in when running bundle package, and that
+Bundler will look in when installing gems. Defaults to `vendor/cache`.
 
-**BUNDLE_DEPLOYMENT**: Disallow changes to the Gemfile.
-When the Gemfile is changed, and the lockfile has not been updated, running Bundler commands will be blocked.
+- **BUNDLE_DEPLOYMENT**: Disallow changes to the Gemfile. This also has the side effect of forcing Bundler to use the
+local cache instead of trying to reach out for the Internet. This allows the hermetic build to work without forcing the
+users to add the `--local` flag to the `bundler install` command.
 
-**BUNDLE_FORCE_RUBY_PLATFORM**: Ignore the current machine's platform and install only ruby platform gems.
-As a result, gems with native extensions will be compiled from source.
+- **BUNDLE_FORCE_RUBY_PLATFORM**: Ignore the current machine's platform and install only ruby platform gems. As a
+result, gems with native extensions will be compiled from source.
 
-See bundle config [documentation](https://bundler.io/v2.5/man/bundle-config.1.html).
+For more information, see Bundler's [documentation](https://bundler.io/v2.5/man/bundle-config.1.html).
 
----
+##### Other configuration that was considered
 
-Note: _BUNDLE_FORCE_RUBY_PLATFORM_ check is done via gemlock-parser in
-[cachito](https://github.com/containerbuildsystem/cachito/blob/master/cachito/workers/pkg_managers/rubygems.py#L101).
+- `BUNDLE_ALLOW_OFFLINE_INSTALL` is not working either with `bundle install` for some reason, which could be probably
+the most logical solution in this case.
 
-_BUNDLE_DEPLOYMENT_ might be helpful when building an image.
-Using the `--local` flag with the `bundle install`, ensures that all dependencies are installed from the cache without accessing the internet.
-This is uncommon, so we would have to force users to use this flag.
-By setting the `BUNDLE_DEPLOYMENT` environment variable, users do not have use the `--local` flag.
+### Generating the SBOM
 
-_When installing gems, Bundler will also "fetch" the gems from the cache and store them inside `vendor` directory._
+#### Main package metadata
 
-Here is more verbose explanation of the `--deployment` available in the `bundle install` command:
+Ruby uses [Gem::Specification](https://guides.rubygems.org/specification-reference/) as a means of defining a Gem's
+metadata. It is usually defined in a `{gem-name}.gemspec` file, which seems to be mandatory for Bundler (trying to run
+`bundle install` with a missing `.gemspec` will throw an error.)
 
-```bash
---deployment
+Both `name` and `version` are required attributes, so this is the most stable place we will find this info. The docs
+imply that this could also be defined in a Rakefile, but Bundler seems to fail even if `Gem::Specification` is defined
+there as well.
+
+The file is written in Ruby, so parsing it will require regex parsing, since we're not pulling in any Ruby
+dependencies.
+
+##### Alternatives considered
+- Use the data from the `Gemfile.lock`, since Bundler adds the current Gem (the main package, in Cachi2's terms) to it
+as a `PATH` dependency:
+
+  ```
+  PATH
+    remote: .
+    specs:
+      tmp (0.1.2)
+
+  ```
+
+  The main issue is that this entry is not mandatory to have this info in the `Gemfile.lock`, and
+  Bundler will happily install any Gem even with this information missing.
+
+#### PURLs
+
+Also check the Ruby PURL [specification](https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst#gem).
+
+##### Standard Gem
+```txt
+pkg:gem/my-gem-name@0.1.1
 ```
 
-In deployment mode, Bundler will 'roll-out' the bundle for production or CI use. Please check carefully if you want to have this option enabled in your development environment.
-This option is deprecated in favor of the deployment setting.
-
-There is also `--prefer-local` flag, which will prefer the local cache over the remote source, but it ain't working at all.
-Environment variable `BUNDLE_ALLOW_OFFLINE_INSTALL` is not working either with `bundle install` for some reason,
-which could be probably the most logical solution in this case.
-
-##### Copy
-
-Copy the local configuration file from the user repository to {output_dir} and set BUNDLE_APP_CONFIG to the new location.
-Then, just append all the environment variables needed to the "new" copy of the user configuration file.
-Bundler will rewrite previous values with the new ones when installing gems.
-
-#### Inject
-
-The other solution would be to inject the config file directly and rewrite the values.
-
-### Metadata
-
-#### git repository URL
-
-- git repository URL is used in other package managers as well
-- no version information available
-- gems in the repository are path dependencies in the `Gemfile.lock` ?!
-
-#### `{gem}.gemspec` file
-
-- the file is optional
-- complete metadata about the gem
-
-Gemfile must contain a _gemspec_ line, + the `{gem}.gemspec` file must be present in the repository.
-Bundle will add the gem as a path dependency to the `Gemfile.lock` file.
-This could be done via gemlock-parser by checking the path.
-
-```ruby
-source "https://rubygems.org"
-
-gemspec
-...
-```
-
-```Gemfile.lock
-...
-PATH
- remote: .
- specs:
- tmp (0.1.2)
-...
-```
-
-#### PURL
-
-Examples from [github.com/purl-spec](https://github.com/package-url/purl-spec/blob/master/PURL-TYPES.rst#gem).
-The platform qualifiers key is used to specify an alternative platform, such as java for JRuby.
+##### Git dependency
 
 ```txt
-pkg:gem/ruby-advisory-db-check@0.12.4
-pkg:gem/jruby-launcher@1.1.2?platform=java
+pkg:gem/my-git-dependency?vcs_url=git%2Bhttps://github.com/my-org/mygem.git%26487618a68443e94d623bb585cb464b07d36702
 ```
 
-- **name:** gem name
-- **namespace:** N/A
-- **qualifiers:** vcs_url (GIT dependencies), checksum, platform (ruby) ?
-- **subpath:** subpath from the root (PATH dependencies)
-- **type:** "gem"
-- **version:** gem version
+The metadata for a Git dependency can be read from the `Gemfile.lock`:
 
-#### SBOM component
+```
+GIT
+  remote: https://github.com/my-org/mygem.git
+  revision: 26487618a68443e94d623bb585cb464b07d36702
+  specs:
+    json-schema (3.0.0)
+      addressable (>= 2.4)
+```
 
-- **name:** from `Gemfile.lock` (path dependency) if available, otherwise from git repository URL
-- **version:** from `Gemfile.lock` (path dependency) if available, otherwise leave empty
-- **purl:** generate PURL from the gem name and version, add qualifiers if needed
+##### Path dependency
+
+```txt
+pkg:gem/my-path-dependency?vcs_url=git%2Bhttps://github.com/my-org/mygem.git%40b6f47bd07e669c8d2eced8015c4bfb06db49949#subpath
+```
+
+The PURL is formed by the current repository remote origin URL and ref, and the subpath that is specified in the
+`Gemfile.lock`:
+
+```ruby
+PATH
+  remote: subpath
+  specs:
+    my-path-dependency (1.0.0)
+```
 
 ### Summary
 
 - define models for RubyGems as the new package manager
 - design high-level code structure into multiple modules
 - parse all gems from `Gemfile.lock`
-- implement metadata parsing either from git origin url or `Gemfile.lock`
+- implement metadata parsing either from Git origin url or `Gemfile.lock`
 - download all gems from rubygems.org, including Bundler
-- download all gems from git repositories
+- download all gems from Git repositories
 - validate path dependencies are relative to the project root
 - handle Bundler configuration options and environment variables
 - generate PURLs for all dependencies
