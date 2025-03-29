@@ -101,9 +101,9 @@ annotated-types==0.7.0 \
     --hash=sha256:1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53 \
     --hash=sha256:aff07c09a53a08bc8cfccb9c85b05f1aa9a2a6f23728d790723543408344ce89
     # via pydantic
-argcomplete==3.6.0 \
-    --hash=sha256:2e4e42ec0ba2fff54b0d244d0b1623e86057673e57bafe72dda59c64bd5dee8b \
-    --hash=sha256:4e3e4e10beb20e06444dbac0ac8dda650cb6349caeefe980208d3c548708bedd
+argcomplete==3.6.1 \
+    --hash=sha256:927531c2fbaa004979f18c2316f6ffadcfc5cc2de15ae2624dfe65deaf60e14f \
+    --hash=sha256:cef54d7f752560570291214f0f1c48c3b8ef09aca63d65de7747612666725dbc
     # via nox
 async-timeout==5.0.1 \
     --hash=sha256:39e3809566ff85354557ec2398b55e096c8364bacac9405a7a1fa429e77fe76c \
