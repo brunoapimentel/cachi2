@@ -784,9 +784,9 @@ mypy-extensions==1.0.0 \
     # via
     #   black
     #   mypy
-nox==2025.2.9 \
-    --hash=sha256:7d1e92d1918c6980d70aee9cf1c1d19d16faa71c4afe338fffd39e8a460e2067 \
-    --hash=sha256:d50cd4ca568bd7621c2e6cbbc4845b3b7f7697f25d5fb0190ce8f4600be79768
+nox==2025.5.1 \
+    --hash=sha256:2a571dfa7a58acc726521ac3cd8184455ebcdcbf26401c7b737b5bc6701427b2 \
+    --hash=sha256:56abd55cf37ff523c254fcec4d152ed51e5fe80e2ab8317221d8b828ac970a31
     # via hermeto (pyproject.toml)
 packageurl-python==0.16.0 \
     --hash=sha256:5c3872638b177b0f1cf01c3673017b7b27ebee485693ae12a8bed70fa7fa7c35 \
